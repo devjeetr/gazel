@@ -1,5 +1,5 @@
 from tree_sitter import Language, Parser
-
+from typing import List
 
 # JS_LANGUAGE = Language("build/my-languages.so", "javascript")
 
@@ -57,6 +57,29 @@ def copy(items):
     return new_items
 
 
+def adjust_gaze_for_insert_edit(gaze_position, edit_position, text):
+    gaze_row, gaze_col = gaze_position
+    edit_row, edit_col = edit_position
+    lines_inserted = text.count("\n")
+    adjusted_row, adjusted_col = (gaze_row, gaze_col)
+    # if the gaze is on the same line as the edit
+    # and at a later column
+    if gaze_row == edit_row and gaze_col >= edit_col:
+        if lines_inserted > 0:
+            adjusted_row = gaze_row + lines_inserted
+            # on the new line, our gazes shift to the left
+            adjusted_col = gaze_col - edit_col
+        else:
+            adjusted_col = gaze_col + len(text)
+
+    # if any lines were inserted, we need to
+    elif gaze_row > edit_row:
+        # for that particular row
+        adjusted_row = gaze_row + lines_inserted
+
+    return adjusted_row, adjusted_col
+
+
 def perform_adjustments(
     gazes,
     edits,
@@ -81,30 +104,23 @@ def perform_adjustments(
         )
 
         modified_gazes = []
-
+        # if it is insert
         if edit[edit_type_k] == edit_insert_type:
+            # insert it
             current_source = insert(
                 current_source, edit[edit_start_k], edit[edit_text_k]
             )
+            # now for each gaze
             for gaze in gazes:
-                new_gaze = gaze.copy()
+                # copy it
                 row, col = index_to_position[edit[edit_start_k]]
-
-                lines_inserted = edit[edit_text_k].count("\n")
-
-                if new_gaze[gaze_line_k] == row and new_gaze[gaze_col_k] >= col:
-                    if lines_inserted > 0:
-                        new_gaze[gaze_line_k] += lines_inserted
-                        new_gaze[gaze_col_k] = new_gaze[gaze_col_k] - col
-                    else:
-                        new_gaze[gaze_col_k] += len(edit[edit_text_k])
-
-                # if any lines were inserted, we need to
-                elif new_gaze[gaze_line_k] > row:
-                    # for that particular row
-                    new_gaze[gaze_line_k] += lines_inserted
-
-                modified_gazes.append(new_gaze)
+                gaze_row, gaze_col = gaze[gaze_line_k], gaze[gaze_col_k]
+                adjusted_row, adjusted_col = adjust_gaze_for_insert_edit(
+                    (gaze_row, gaze_col), (row, col), edit[edit_text_k]
+                )
+                modified_gazes.append(
+                    {**gaze, gaze_line_k: adjusted_row, gaze_col_k: adjusted_col,}
+                )
 
         else:  # delete
 
@@ -127,7 +143,6 @@ def perform_adjustments(
                     and gaze_index < edit[edit_start_k] + edit[edit_size_k]
                 ):
                     # skip this gaze, it was deleted
-                    print("skipping")
                     continue
                 # if lines didn't change
                 if lines_deleted == 0:
@@ -150,13 +165,10 @@ def perform_adjustments(
                         modified_gazes.append(new_gaze)
                     elif new_gaze[gaze_line_k] > row:
                         new_gaze[gaze_line_k] -= lines_deleted
-                        print("greater")
                         modified_gazes.append(new_gaze)
                     else:
-                        print("not greater appending default")
                         modified_gazes.append(new_gaze)
                 else:
-                    print(f"Appending unchanged")
                     modified_gazes.append(new_gaze)
         gaze_sets.append(modified_gazes)
         current_gazes = modified_gazes
