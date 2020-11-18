@@ -71,7 +71,7 @@ Now lets say you wanna see how this token changed over time
 history = tracker.token_history(token)#
 
 # want:
-[{ timestamp: 2332,
+[{ version: 0,
   tokens_changed: [{token: .., gazes: ..}, ..]
   },
   ..]
