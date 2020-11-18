@@ -66,6 +66,13 @@ def load_language(extension):
             query_spec = f.read()
 
         return language, query_spec
+
+    if extension == "cpp":
+        language = Language("languages/languages.so", "cpp")
+        with open("./languages/cpp/queries/highlights.scm") as f:
+            query_spec = f.read()
+
+        return language, query_spec
     raise Exception("No language for extension " + extension)
 
 
@@ -111,7 +118,7 @@ def get_tokens(source, language_extension, pti):
         indices, name = capture
         previous_len = len(seen.get(indices, "").split("."))
 
-        if previous_len < len(name.split(".")):
+        if previous_len < len(name.split(".")) or indices not in seen:
             seen[indices] = name
 
     return list(seen.items())
