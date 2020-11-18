@@ -1,7 +1,8 @@
 from typing import Tuple, List
 
+
 def insert(source, start, text):
-    return source[: start + 1] + text + source[start + 1 :]
+    return source[:start] + text + source[start:]
 
 
 def delete(source, start, size):
@@ -20,7 +21,7 @@ class Id:
 def create_position_index_mapping(
     source,
 ) -> Tuple[List[Tuple[int, int]], List[List[int]]]:
-    lines = source.splitlines(True)
+    lines = source.splitlines(True,)
     index_to_position = []
     position_to_index = []
 
@@ -28,7 +29,7 @@ def create_position_index_mapping(
     current_line = 0
 
     for line_number, line in enumerate(lines):
-        if len(position_to_index) < current_line + 1:
+        if len(position_to_index) < line_number + 1:
             position_to_index.append([])
 
         for column, _ in enumerate(line):
@@ -36,7 +37,6 @@ def create_position_index_mapping(
             position_to_index[line_number].append(index)
 
             index += 1
-        current_line += 1
 
     return index_to_position, position_to_index
 

@@ -1,9 +1,10 @@
-from typing import Tuple
-from tree_sitter import Language, Parser
+from typing import Tuple, List
+from tree_sitter import Language, Parser, Tree, TreeCursor, Node
 from common import create_position_index_mapping
 
 
 def point_to_index(point, position_to_index, last=False):
+    print(f"{point[0]}:{point[1]}")
     return (
         position_to_index[point[0]][point[1]]
         if not last
@@ -12,6 +13,7 @@ def point_to_index(point, position_to_index, last=False):
 
 
 def add_query_indices(captures, position_to_index):
+    print(captures)
     return [
         (
             (
@@ -105,23 +107,45 @@ def make_parse_table(source, language_extension):
     return table
 
 
-def get_tokens(source, language_extension, pti):
-    language, query_spec = load_language(language_extension)
+def make_parser(language):
     parser = Parser()
     parser.set_language(language)
-    tree = parser.parse(bytes(source, "utf-8"))
+
+    return parser
+
+
+def get_captures(node, query_spec, language):
     query = language.query(query_spec)
-    captures = query.captures(tree.root_node)
-    indexed_captures = add_query_indices(captures, pti)
-    seen = {}
-    for capture in indexed_captures:
-        indices, name = capture
-        previous_len = len(seen.get(indices, "").split("."))
+    return query.captures(node)
 
-        if previous_len < len(name.split(".")) or indices not in seen:
-            seen[indices] = name
 
-    return list(seen.items())
+# def get_tokens(source, language_extension, pti):
+#     # print(source)
+
+#     language, query_spec = load_language(language_extension)
+#     parser = make_parser(language)
+#     tree = parser.parse(bytes(source, "utf-8"))
+
+#     captures = get_captures(tree.root_node, query_spec, language)
+#     indexed_captures = add_query_indices(captures, pti)
+
+#     seen = {}
+#     for capture in indexed_captures:
+#         indices, name = capture
+#         previous_len = len(seen.get(indices, "").split("."))
+
+#         if previous_len < len(name.split(".")) or indices not in seen:
+#             seen[indices] = name
+
+#     return list(seen.items())
+
+
+def get_tokens(source, language_extension, pti):
+    language, query_spec = load_language(language_extension)
+    parser = make_parser(language)
+    tree = parser.parse(bytes(source, "utf-8"))
+
+    return extract_tokens_from_tree(tree)
 
 
 def make_inverse_parse_table(parse_table: dict):
@@ -133,4 +157,56 @@ def make_inverse_parse_table(parse_table: dict):
             table[i] = ((start, end), token_type)
 
     return table
+
+
+def make_move(cursor, move, fn):
+    # think of the parameter "move" as the move that was made to
+    # arrive at the present node
+    if move == "down":
+        fn(cursor)
+        if cursor.goto_first_child():
+            make_move(cursor, "down", fn)
+        elif cursor.goto_next_sibling():
+            make_move(cursor, "right", fn)
+        elif cursor.goto_parent():
+            make_move(cursor, "up", fn)
+    elif move == "right":
+        fn(cursor)
+        if cursor.goto_first_child():
+            make_move(cursor, "down", fn)
+        elif cursor.goto_next_sibling():
+            make_move(cursor, "right", fn)
+        elif cursor.goto_parent():
+            make_move(cursor, "up", fn)
+    elif move == "up":
+        if cursor.goto_next_sibling():
+            make_move(cursor, "right", fn)
+        elif cursor.goto_parent():
+            make_move(cursor, "up", fn)
+
+
+def is_child_node(node: Node) -> bool:
+    return node.child_count == 0
+
+
+def extract_tokens_from_tree(tree: Tree) -> List[Tuple[Tuple[int], str]]:
+    cursor: TreeCursor = tree.walk()
+    children = []
+
+    def walker(cusor: TreeCursor):
+        if is_child_node(cursor.node):
+            indices = (cursor.node.start_byte, cursor.node.end_byte)
+            children.append((indices, cursor.node.type))
+
+    make_move(cursor, "down", walker)
+
+    return children
+
+
+def my_fn(cursor):
+
+    # print(cursor.node.start_byte, cursor.node.end_byte)
+    # print(cursor.node.has_changes)
+    if cursor.node.child_count == 0:
+        print(cursor.node.type)
 
