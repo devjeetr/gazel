@@ -70,7 +70,7 @@ Now lets say you wanna see how this token changed over time
 ```python
 history = tracker.token_history(token)
 # > [Token(id: 0, text: "int", start:7,end:10, last_edited=0), 
-Token(id: 0, text: "int", start:8,end:11, last_edited=1)]
+# > Token(id: 0, text: "int", start:8,end:11, last_edited=1)]
 ```
 
 This `tracker.token_history(token)` will give you all the different versions of this token. Each `token` contains a `last_edited` node, which tells you the timestamp at which the last edit was made.
@@ -132,6 +132,6 @@ You can mix and match all the different selectors.
 ### Getting all gazes in an edit window
 ```python
 
-tracker.get_edit_gazes_in_window(start_edit, end_edit)
+tracker.get_gazes_in_window(start_edit, end_edit)
 # > all gazes in the given edit window
 ```
