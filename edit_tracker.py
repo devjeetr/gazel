@@ -8,14 +8,6 @@ from identifiers import TokenSet, Token, token_info_for_delete, token_info_for_i
 from copy import deepcopy
 
 
-def cmd_args():
-    parser = ArgumentParser()
-
-    parser.add_argument("--gaze", help="path to gaze file")
-    parser.add_argument("--edits", help="path to edits file")
-    parser.add_argument("--source", help="path to source file")
-
-
 def add_identifier_ids(gazes, edits, versions: List[TokenSet]):
     """Adds identifier ids to gazes. These stay consistent over time.
        
@@ -61,7 +53,7 @@ def add_identifier_ids(gazes, edits, versions: List[TokenSet]):
     return gazes
 
 
-def get_source_versions(source, edits, extension):
+def get_source_versions(source: str, edits, extension):
     next_id = Id()
     current_version = TokenSet(source, extension)
 
@@ -69,13 +61,19 @@ def get_source_versions(source, edits, extension):
     current_version.assign_ids(next_id)
 
     for edit in edits:
-
+        # FIXME:
+        # currently, the "offset" field in the changelog
+        # output by iTrace ATOM is incorrect, but the line/col
+        # is correct. Once that is fixed, we can remove these
+        # two lines.
         offset = current_version.pti[edit["row"]][edit["col"]]
         edit = {**edit, "offset": offset}
         if edit["type"] == "insert":
             start = edit["offset"]
             text = edit["text"]
-            next_version = token_info_for_insert(current_version, start, text, next_id)
+            next_version = token_info_for_insert(
+                current_version, start, text, next_id, edit["timestamp"]
+            )
             assert next_version.source[start] == text
             versions.append(next_version)
             current_version = next_version
@@ -83,7 +81,9 @@ def get_source_versions(source, edits, extension):
             start = edit["offset"]
             size = edit["len"]
 
-            next_version = token_info_for_delete(current_version, start, size, next_id)
+            next_version = token_info_for_delete(
+                current_version, start, size, next_id, edit["timestamp"]
+            )
             versions.append(next_version)
             current_version = next_version
 
@@ -100,7 +100,7 @@ def main():
         change_log = json.load(f)["log"]
 
     with open(os.path.join(root, "sourceOutput-Sample-Data-1602690815285.cpp")) as f:
-        source = f.read()  # .replace("\r\n", "\n")
+        source = f.read()
 
     extension = "cpp"
     change_log = list(filter(len, change_log))
@@ -112,7 +112,7 @@ def main():
         if changed:
             i += 1
         for token in changed:
-            print(token.text(version.source))
+            print(token.text())
 
     with open("test-output.json", "w") as f:
         json.dump([gaze for gaze in annotated_gazes], f)
