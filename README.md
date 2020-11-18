@@ -68,13 +68,16 @@ Each token has an `id`, `syntactic_category`, `start` and `end` indices, `last_e
 Now lets say you wanna see how this token changed over time
 
 ```python
-history = tracker.token_history()#
+history = tracker.token_history(token)#
 
 # want:
-[{ version: 0,
-  tokens_changed: [{token: .., gazes: ..}, ..]
+[{ token: token,
+   changed: true | false, 
+   gazes: [...],
+   snapshot: int
   },
-  ..]
+  ],
+  
 ```
 
 This `tracker.token_history(token)` will give you all the different versions of this token. Each `token` contains a `last_edited` node, which tells you the timestamp at which the last edit was made.
