@@ -68,7 +68,7 @@ Each token has an `id`, `syntactic_category`, `start` and `end` indices, `last_e
 Now lets say you wanna see how this token changed over time
 
 ```python
-history = tracker.token_history(token)#
+history = tracker.token_history()#
 
 # want:
 [{ version: 0,
