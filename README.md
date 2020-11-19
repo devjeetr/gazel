@@ -72,7 +72,6 @@ history = tracker.token_history(token)#
 
 # want:
 [{ token: token,
-   changed: true | false, 
    gazes: [...],
    snapshot: int
   },
