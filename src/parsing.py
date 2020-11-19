@@ -1,6 +1,5 @@
 from typing import Tuple, List, Literal
 from tree_sitter import Language, Parser, Tree, TreeCursor, Node
-from common import create_position_index_mapping
 
 
 def load_language(extension):

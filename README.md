@@ -1,3 +1,7 @@
+## TODO
+
+[ ] Make sure you sort gazes,edits by timestamp
+[ ]
 # pyTrace
 
 Pytrace provides fixation algorithms for aggregating gazes, as well as tools to help you deal with edits that occur during eyetracking sessions.
@@ -25,113 +29,118 @@ fixations = fixation_filter(gazes, changelog, sources, **opts)
 
 # Now track edits using Tracker
 
-tracker = Tracker(fixations, changelog, sources)
-
+tracker = Tracker(fixations, changelog, sources, language)
+# Note that you need to pass in the source code language,
+# to help `pytrace` determine which parser to use.
 ```
 
-Internally, tracker assigns a unique id to each token in the source code that is unique across time. You can use the `id` to track how a token moves around, 
-along with any fixations on the token.
+## Base Functionality
 
+The main goal of `Tracker` is to track fixations and source code tokens across edits. Once you create a `Tracker` you can query it to get snapshots etc.
 
-### Tracking tokens across edits
-Lets say you have an original source file, along with some fixations & changes.
-```python
-source_original = """
-    int x = 22;
-    int y = 33;
-"""
-fixations = [{ "line": 1, "col": 4, time: 0} # points to the 'i' in 'int' from the line 'int x = 22;'
-,...
-]
-changelog = [{"line": 1, "col": 0, "type": "insert", text: "\n", time=1}] # adding a new line 
-```
-
-You create a tracker `Tracker`:
+### Snapshots
+`Tracker` maintains a list of snapshots corresponding to the original file and subsequent edits. The original version is stored at index `0` and the first edit is stored at index `1`.
 
 ```python
-tracker = Tracker(fixations, change_log, source_original)
+# get original
+tracker.get_snapshot(0)
 
-# option 1
-# get all tokens at time 0
-orignal_tokens = tracker.get_tokens_at_time(0) # [Token('int'), Token('x'), Token('='), ...]
-
-# lets get the token for 'int'
-token = original_tokens[0]
-
-# option 2
-# or you could simply do this:
-token = tracker.get_token_with_text("int") # Token('int')
+# get first edit
+tracker.get_snapshot(1)
 ```
 
-Each token has an `id`, `syntactic_category`, `start` and `end` indices, `last_edited` (the last time this token changed either position or text), and some other properties.
-
-Now lets say you wanna see how this token changed over time
+Each snapshot is represented by a `Snapshot`. A `Snapshot` is defined as:
 
 ```python
-history = tracker.token_history(token)
-# > [Token(id: 0, text: "int", start:7,end:10, last_edited=0), 
-# > Token(id: 0, text: "int", start:8,end:11, last_edited=1)]
+class Snapshot:
+    id: int
+    source: Source
+    tokens: Tuple[Token, ...]
+    changes: Tuple[TokenChange, ...] = ()
+    time: float = 0.0
+```
+`Snapshot.time` represents the time at which a snapshot was created. It corresponds to the timestamp in the changelog that was used to create this `Snapshot`.
+
+`Snapshot.tokens` represents the parsed source code tokens.
+`Snapshot.changes` represents all the token changes that happened to this `Snapshot` since the last version. For the  `Snapshot` representing the original source, `Snapshot.changes` is empty.
+
+`Snapshots.source` is a `Source` object, containing the raw text of the source code, as well as mappings from text indices to line/column numbers and vice-versa. It is defined as follows:
+```python
+@dataclass(frozen=True)
+class Source:
+    text: str
+    mapping: PositionMapping
+    language: str
 ```
 
-This `tracker.token_history(token)` will give you all the different versions of this token. Each `token` contains a `last_edited` node, which tells you the timestamp at which the last edit was made.
+### Gazes
 
-
-
-### Getting all gazes over a particular identifier
+You can retreive gazes for a given time window as follows:
 
 ```python
-    gazes = tracker.get_gazes(token=token)
-    # gazes is all gazes that 
-    # are mapped to this given token
+tracker.get_gazes()
+# all gazes
+
+tracker.get_gazes(start, end)
+# returns a dataframe that is filtered
 ```
 
-### Getting gazes within a time window
+The gaze dataframe is simply a `pandas.DataFrame` containing the original gazes, with some additional columns:
+* `syntax_node` - The syntax node associated with the gaze. `None` if the gaze doesn't fall on a token.
+* `syntax_node_id` - A stable id for the token associated with this gaze. `None` if the gaze doesn't fall on a token.
+
+`syntax_node_id` is a unique id that is assigned to each token in the source code across different snapshots. For a given token, this id is unique across time and space. Thus, you can use this id to determine how 
+### diffs
 ```python
-gazes = tracker.gazes(time_window=[0, 1])
-# all gazes from time 0 to time 1
+tracker.diff(0, 2) # gives you the diff between version 0 & version 1
 ```
-
-
-### Getting gazes in a certain span of the text
 
 ```python
-gazes = tracker.gazes(
-    span=(
-        (0, 3), # all gazes from line 0, col 3
-        (4, 5)  # to line 4, col 5
-    )
-)
+tracker.diff_time(2300, 2400)
+    # gives you the diff between time unit 2300 & time unit 2400
 ```
 
-### Combinations
+
+A `SnapshotDiff` is defined as follows:
 ```python
-    gazes = tracker.gazes(
-        span=(..),
-        token=..,
-        time_window=..
-    )
-    # > all gazes on the given token within the given line/col span
-    # within the given time_window
+class SnapshotDiff(NamedTuple):
+    old: Snapshot
+    new: Snapshot
+    token_changes: List[TokenChange]
+    gaze_changes: List[GazeChange]
+    gazes: pd.DataFrame
 ```
 
-### Getting a specific token to use with queries
+It gives you a list of all token changes and gaze changes. 
 
-```
-    tracker.get_token(text="int", line=3)
-    # > first 'int' on line 3
+Token changes can be of 3 types: `inserted`, `moved` or `deleted`.
 
-    tracker.get_token(line=3, col=5)
-    # > any token that is on line 3, col 5
+Gaze changes can be of 2 types: `deleted` or `moved`. (`deleted` means that the token to which the gaze was mapped to has been removed from the source.)
 
-    tracker.get_token(gaze=g)
-    # > Token that is associated with gaze 'gaze'
-```
+By default, `tracker.diff(start, end)` will include all the gazes from the start of the experiment (the time at which the first gaze is recorded), up until the `end` snapshot time. If you want to only include gazes within the timespan of the `start` and `end` snapshots, you can pass an optional parameter:
 
-You can mix and match all the different selectors.
-
-### Getting all gazes in an edit window
 ```python
+diff = tracker.diff(0, 3, window_only=True)
+```
 
-tracker.get_gazes_in_window(start_edit, end_edit)
-# > all gazes in the given edit window
+`pytrace` also provides a pretty-printer to help you print diffs for inspecting the data. It supports print gaze changes, token changes and `SnapshotDiffs`.
+
+```python
+from pytrace import pprint
+
+diff = tracker.diff(2, 3)
+
+pprint(diff)
+pprint(diff.token_changes)
+pprint(diff.gaze_changes)
+```
+
+`pytrace` provides a module `transforms` to help you manipulate `pytrace` structures including `Snapshots` and `SnapshotDiff`.
+
+```python
+from pytrace import transforms as T
+
+diff = tracker.diff(2, 5)
+
+# TODO
 ```
