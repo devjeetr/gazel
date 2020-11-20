@@ -7,15 +7,28 @@
 Pytrace provides fixation algorithms for aggregating gazes, as well as tools to help you deal with edits that occur during eyetracking sessions.
 
 
+
 ## Getting started
+
+
+### Installation
+
+#### Requirements
+pytrace requires python 3.8.5
+#### Installation
+You can install pytrace using
+```
+pip install pytrace
+```
+
 
 pyTrace comes with a command line interface as well as a python library. 
 
 To use either version, you need 3 things:
+* itrace core file output
 * gaze file output
 * changelog
 * original source file(s)
-
 
 
 To get started:
