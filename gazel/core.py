@@ -1,30 +1,11 @@
-from typing import (
-    Dict,
-    List,
-    Optional,
-    Union,
-)
 from copy import deepcopy
+from typing import List
 
-from gazel.common import (
-    GazeConfig,
-    Id,
-    create_position_index_mapping,
-)
-from gazel.core_types import (
-    TokenChange,
-    Point,
-    Position,
-    PositionMapping,
-    Range,
-    Snapshot,
-    Source,
-    Token,
-    make_snapshot,
-)
-from gazel.parsing import get_tokens
-from gazel.range import same_point_range, token_at_index
+from gazel.common import GazeConfig, Id
+from gazel.core_types import Snapshot
+from gazel.core_constructors import make_snapshot
 from gazel.edits import edit_source
+from gazel.range import token_at_index
 
 
 def make_versions(source: str, language: str, edits: List[dict]) -> List[Snapshot]:

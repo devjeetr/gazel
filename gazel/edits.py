@@ -1,12 +1,15 @@
+from typing import Callable, List, Literal, Optional, Tuple, Union
+
 import pampy
-from typing import List, Literal, Tuple, Callable, Union, Optional
+
 from gazel.common import Id
-from gazel.core_types import Snapshot, Token, TokenChange, make_snapshot
+from gazel.core_constructors import make_snapshot
+from gazel.core_types import Snapshot, Token, TokenChange
 from gazel.range import (
-    range_overlaps,
-    get_token_at_range,
     _shift_range,
+    get_token_at_range,
     range_contains,
+    range_overlaps,
     same_point_range,
 )
 
