@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<unit xmlns="http://www.srcML.org/srcML/src" revision="1.0.0" language="C++" filename="Sample.cpp"><class><specifier>public</specifier> class <name>TrieNode</name>
+<block>{<private type="default">
+    <decl_stmt><decl><type><specifier>public</specifier> <name><name>TrieNode</name><index>[]</index></name></type> <name>Children</name></decl>;</decl_stmt>
+    <decl_stmt><decl><type><specifier>public</specifier> <name>string</name></type> <name>Word</name></decl>;</decl_stmt>
+
+    <constructor><specifier>public</specifier> <name>TrieNode</name><parameter_list>()</parameter_list>
+    <block>{<block_content>
+        <expr_stmt><expr><name><name>this</name><operator>.</operator><name>Children</name></name> <operator>=</operator> <operator>new</operator> <name><name>TrieNode</name><index>[<expr><literal type="number">30</literal></expr>]</index></name></expr>;</expr_stmt>
+        <expr_stmt><expr><name><name>this</name><operator>.</operator><name>Word</name></name> <operator>=</operator> <name>null</name></expr>;</expr_stmt>
+    </block_content>}</block></constructor>
+</private>}</block>
+
+<decl>public <name>class</name> <name>Trie</name> <argument_list>{
+    <comment type="block" format="doxygen">/** Initialize your data structure here. */</comment>
+    <argument><expr><specifier>private</specifier> <name>TrieNode</name> <name>root</name></expr></argument>;
+
+    <argument><expr><specifier>public</specifier> <macro><name>Trie</name><argument_list>()</argument_list></macro> <block>{
+        <expr><name>root</name> <operator>=</operator> <operator>new</operator> <call><name>TrieNode</name><argument_list>()</argument_list></call></expr>;
+    }</block>
+
+    <comment type="block" format="doxygen">/** Returns if the word is in the trie inserted text!. */</comment>
+    <specifier>public</specifier> <name>bool</name> <macro><name>Search</name><argument_list>(<argument>string word</argument>)</argument_list></macro> <block>{
+
+        <expr><name>TrieNode</name> <name>iter</name> <operator>=</operator> <name>root</name></expr>;
+
+        <macro><name>foreach</name> <argument_list>(<argument>char c in word</argument>)</argument_list></macro>
+        <expr><block>{
+            <expr><name>int</name> <name>ne</name> <operator>=</operator> <name>c</name> <operator>-</operator> <literal type="char">'a'</literal></expr>;
+
+            <if_stmt><if>if <condition>(<expr><name><name>iter</name><operator>.</operator><name>Children</name><index>[<expr><name>cIndex</name></expr>]</index></name> <operator>!=</operator> <name>null</name></expr>)</condition>
+            <expr_stmt><expr><block>{
+                <expr><name>iter</name> <operator>=</operator> <name><name>iter</name><operator>.</operator><name>Children</name><index>[<expr><name>cIndex</name></expr>]</index></name></expr>;
+            }</block></expr></expr_stmt></if>
+            <else>else <expr_stmt><expr><block>{
+                <return>return <expr><literal type="boolean">false</literal></expr>;</return>
+            }</block>
+        }</expr></expr_stmt></else></if_stmt>
+
+        <return>return <expr><ternary><condition><expr><name><name>iter</name><operator>.</operator><name>Word</name></name> <operator>!=</operator> <name>null</name></expr> ?</condition><then> <expr><literal type="boolean">true</literal></expr> </then><else>: <expr><literal type="boolean">false</literal></expr></else></ternary></expr>;</return>
+    }</block>
+
+    <comment type="block" format="doxygen">/** Inserts a word into the trie. */</comment>
+    <specifier>public</specifier> <name>void</name> <macro><name>Insert</name><argument_list>(<argument>string word</argument>)</argument_list></macro> <block>{
+        <expr><name>TrieNode</name> <name>iter</name> <operator>=</operator> <name>root</name></expr>;
+        <macro><name>foreach</name> <argument_list>(<argument>char c in word</argument>)</argument_list></macro>
+        <expr><block>{
+            <expr><name>int</name> <name>cIndex</name> <operator>=</operator> <name>c</name> <operator>-</operator> <literal type="char">'a'</literal></expr>;
+
+            <if_stmt><if>if <condition>(<expr><name><name>iter</name><operator>.</operator><name>Children</name><index>[<expr><name>cIndex</name></expr>]</index></name> <operator>==</operator> <name>null</name></expr>)</condition>
+            <expr_stmt><expr><block>{
+                <expr><name><name>iter</name><operator>.</operator><name>Children</name><index>[<expr><name>cIndex</name></expr>]</index></name> <operator>=</operator> <operator>new</operator> <call><name>TrieNode</name><argument_list>()</argument_list></call></expr>;
+            }</block>
+
+            <name>iter</name> <operator>=</operator> <name><name>iter</name><operator>.</operator><name>Children</name><index>[<expr><name>cIndex</name></expr>]</index></name></expr>;</expr_stmt></if></if_stmt>
+        }</block>
+
+        <name><name>iter</name><operator>.</operator><name>Word</name></name> <operator>=</operator> <name>word</name></expr>;
+    }</block>
+
+
+
+    <comment type="block" format="doxygen">/** Returns if there is any word in the trie that starts with the given prefix. */</comment>
+    <specifier>public</specifier> <name>bool</name> <macro><name>StartsWith</name><argument_list>(<argument>string prefix</argument>)</argument_list></macro> <block>{
+
+        <expr><name>TrieNode</name> <name>iter</name> <operator>=</operator> <name>root</name></expr>;
+
+        <macro><name>foreach</name> <argument_list>(<argument>char c in prefix</argument>)</argument_list></macro>
+        <expr><block>{
+            <expr><name>int</name> <name>cIndex</name> <operator>=</operator> <name>c</name> <operator>-</operator> <literal type="char">'a'</literal></expr>;
+            <if_stmt><if>if <condition>(<expr><name><name>iter</name><operator>.</operator><name>Children</name><index>[<expr><name>cIndex</name></expr>]</index></name> <operator>!=</operator> <name>null</name></expr>)</condition>
+            <expr_stmt><expr><block>{
+                <expr><name>iter</name> <operator>=</operator> <name><name>iter</name><operator>.</operator><name>Children</name><index>[<expr><name>cIndex</name></expr>]</index></name></expr>;
+            }</block></expr></expr_stmt></if>
+            <else>else
+            <expr_stmt><expr><block>{
+                <return>return <expr><literal type="boolean">false</literal></expr>;</return>
+            }</block>
+        }</expr></expr_stmt></else></if_stmt>
+
+        <return>return <expr><literal type="boolean">true</literal></expr>;</return>
+    }</block>
+}</expr></block></expr></block></expr></argument></argument_list></decl></class>
+
+<comment type="block" format="doxygen">/**
+ * Your Trie object will be instantiated and called as such:
+ * Trie obj = new Trie();
+ * obj.Insert(word);
+ * bool param_2 = obj.Search(word);
+ * bool param_3 = obj.StartsWith(prefix);
+ */</comment>
+</unit>

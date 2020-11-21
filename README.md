@@ -1,6 +1,6 @@
-# pyTrace
+# gazel
 
-Pytrace provides fixation algorithms for aggregating gazes, as well as tools to help you deal with edits that occur during eyetracking sessions.
+gazel provides fixation algorithms for aggregating gazes, as well as tools to help you deal with edits that occur during eyetracking sessions.
 
 
 
@@ -10,15 +10,15 @@ Pytrace provides fixation algorithms for aggregating gazes, as well as tools to 
 ### Installation
 
 #### Requirements
-pytrace requires python 3.8.5
+gazel requires python 3.8.5
 #### Installation
-You can install pytrace using
+You can install gazel using
 ```
-pip install pytrace
+pip install gazel
 ```
 
 
-pyTrace comes with a command line interface as well as a python library. 
+gazel comes with a command line interface as well as a python library. 
 
 To use either version, you need 3 things:
 * itrace core file output
@@ -30,8 +30,8 @@ To use either version, you need 3 things:
 To get started:
 
 ```python
-# import pytrace
-from pytrace import fixation_filter, Tracker
+# import gazel
+from gazel import fixation_filter, Tracker
 
 # run fixation filter to get fixations
 fixations = fixation_filter(gazes, changelog, sources, **opts)
@@ -40,7 +40,7 @@ fixations = fixation_filter(gazes, changelog, sources, **opts)
 
 tracker = Tracker(fixations, changelog, sources, language)
 # Note that you need to pass in the source code language,
-# to help `pytrace` determine which parser to use.
+# to help `gazel` determine which parser to use.
 ```
 
 ## Base Functionality
@@ -132,10 +132,10 @@ By default, `tracker.diff(start, end)` will include all the gazes from the start
 diff = tracker.diff(0, 3, window_only=True)
 ```
 
-`pytrace` also provides a pretty-printer to help you print diffs for inspecting the data. It supports print gaze changes, token changes and `SnapshotDiffs`.
+`gazel` also provides a pretty-printer to help you print diffs for inspecting the data. It supports print gaze changes, token changes and `SnapshotDiffs`.
 
 ```python
-from pytrace import pprint
+from gazel import pprint
 
 diff = tracker.diff(2, 3)
 
@@ -144,10 +144,10 @@ pprint(diff.token_changes)
 pprint(diff.gaze_changes)
 ```
 
-`pytrace` provides a module `transforms` to help you manipulate `pytrace` structures including `Snapshots` and `SnapshotDiff`.
+`gazel` provides a module `transforms` to help you manipulate `gazel` structures including `Snapshots` and `SnapshotDiff`.
 
 ```python
-from pytrace import transforms as T
+from gazel import transforms as T
 
 diff = tracker.diff(2, 5)
 

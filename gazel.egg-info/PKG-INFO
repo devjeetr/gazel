@@ -1,0 +1,170 @@
+Metadata-Version: 2.1
+Name: gazel
+Version: 0.0.1
+Summary: Track fixations across edits for eyetracking experiments
+Home-page: https://github.com/devjeetrr/pytrace
+Author: Devjeet Roy
+Author-email: devjeetrr@gmail.com
+License: UNKNOWN
+Description: # gazel
+        
+        gazel provides fixation algorithms for aggregating gazes, as well as tools to help you deal with edits that occur during eyetracking sessions.
+        
+        
+        
+        ## Getting started
+        
+        
+        ### Installation
+        
+        #### Requirements
+        gazel requires python 3.8.5
+        #### Installation
+        You can install gazel using
+        ```
+        pip install gazel
+        ```
+        
+        
+        gazel comes with a command line interface as well as a python library. 
+        
+        To use either version, you need 3 things:
+        * itrace core file output
+        * gaze file output
+        * changelog
+        * original source file(s)
+        
+        
+        To get started:
+        
+        ```python
+        # import gazel
+        from gazel import fixation_filter, Tracker
+        
+        # run fixation filter to get fixations
+        fixations = fixation_filter(gazes, changelog, sources, **opts)
+        
+        # Now track edits using Tracker
+        
+        tracker = Tracker(fixations, changelog, sources, language)
+        # Note that you need to pass in the source code language,
+        # to help `gazel` determine which parser to use.
+        ```
+        
+        ## Base Functionality
+        
+        The main goal of `Tracker` is to track fixations and source code tokens across edits. Once you create a `Tracker` you can query it to get snapshots etc.
+        
+        ### Snapshots
+        `Tracker` maintains a list of snapshots corresponding to the original file and subsequent edits. The original version is stored at index `0` and the first edit is stored at index `1`.
+        
+        ```python
+        # get original
+        tracker.get_snapshot(0)
+        
+        # get first edit
+        tracker.get_snapshot(1)
+        ```
+        
+        Each snapshot is represented by a `Snapshot`. A `Snapshot` is defined as:
+        
+        ```python
+        class Snapshot:
+            id: int
+            source: Source
+            tokens: Tuple[Token, ...]
+            changes: Tuple[TokenChange, ...] = ()
+            time: float = 0.0
+        ```
+        `Snapshot.time` represents the time at which a snapshot was created. It corresponds to the timestamp in the changelog that was used to create this `Snapshot`.
+        
+        `Snapshot.tokens` represents the parsed source code tokens.
+        `Snapshot.changes` represents all the token changes that happened to this `Snapshot` since the last version. For the  `Snapshot` representing the original source, `Snapshot.changes` is empty.
+        
+        `Snapshots.source` is a `Source` object, containing the raw text of the source code, as well as mappings from text indices to line/column numbers and vice-versa. It is defined as follows:
+        ```python
+        @dataclass(frozen=True)
+        class Source:
+            text: str
+            mapping: PositionMapping
+            language: str
+        ```
+        
+        ### Gazes
+        
+        You can retreive gazes for a given time window as follows:
+        
+        ```python
+        tracker.get_gazes()
+        # all gazes
+        
+        tracker.get_gazes(start, end)
+        # returns a dataframe that is filtered
+        ```
+        
+        The gaze dataframe is simply a `pandas.DataFrame` containing the original gazes, with some additional columns:
+        * `syntax_node` - The syntax node associated with the gaze. `None` if the gaze doesn't fall on a token.
+        * `syntax_node_id` - A stable id for the token associated with this gaze. `None` if the gaze doesn't fall on a token.
+        
+        `syntax_node_id` is a unique id that is assigned to each token in the source code across different snapshots. For a given token, this id is unique across time and space. Thus, you can use this id to determine how 
+        ### diffs
+        ```python
+        tracker.diff(0, 2) # gives you the diff between version 0 & version 1
+        ```
+        
+        ```python
+        tracker.diff_time(2300, 2400)
+            # gives you the diff between time unit 2300 & time unit 2400
+        ```
+        
+        
+        A `SnapshotDiff` is defined as follows:
+        ```python
+        class SnapshotDiff(NamedTuple):
+            old: Snapshot
+            new: Snapshot
+            token_changes: List[TokenChange]
+            gaze_changes: List[GazeChange]
+            gazes: pd.DataFrame
+        ```
+        
+        It gives you a list of all token changes and gaze changes. 
+        
+        Token changes can be of 3 types: `inserted`, `moved` or `deleted`.
+        
+        Gaze changes can be of 2 types: `deleted` or `moved`. (`deleted` means that the token to which the gaze was mapped to has been removed from the source.)
+        
+        By default, `tracker.diff(start, end)` will include all the gazes from the start of the experiment (the time at which the first gaze is recorded), up until the `end` snapshot time. If you want to only include gazes within the timespan of the `start` and `end` snapshots, you can pass an optional parameter:
+        
+        ```python
+        diff = tracker.diff(0, 3, window_only=True)
+        ```
+        
+        `gazel` also provides a pretty-printer to help you print diffs for inspecting the data. It supports print gaze changes, token changes and `SnapshotDiffs`.
+        
+        ```python
+        from gazel import pprint
+        
+        diff = tracker.diff(2, 3)
+        
+        pprint(diff)
+        pprint(diff.token_changes)
+        pprint(diff.gaze_changes)
+        ```
+        
+        `gazel` provides a module `transforms` to help you manipulate `gazel` structures including `Snapshots` and `SnapshotDiff`.
+        
+        ```python
+        from gazel import transforms as T
+        
+        diff = tracker.diff(2, 5)
+        
+        # TODO
+        ```
+        
+Platform: UNKNOWN
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.8.5
+Description-Content-Type: text/markdown
