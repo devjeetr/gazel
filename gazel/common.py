@@ -2,14 +2,6 @@ from typing import Dict, Mapping, NamedTuple, Tuple
 from gazel.core_types import Point
 
 
-def insert(source, start, text):
-    return source[:start] + text + source[start:]
-
-
-def delete(source, start, size):
-    return source[:start] + source[start + size :], source[start : start + size]
-
-
 class Id:
     def __init__(self):
         self.i = -1

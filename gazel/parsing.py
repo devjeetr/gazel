@@ -1,9 +1,8 @@
-from typing import Tuple, List, Literal
+from typing import Tuple, List, Literal, cast
 from tree_sitter import Language, Parser, Tree, TreeCursor, Node
-import os
 
 
-def load_language(extension):
+def load_language(extension: str):
     if extension == "js":
         language = Language("./gazel/languages/languages.so", "javascript")
         with open("gazel/languages/javascript/queries/highlights.scm") as f:
@@ -31,8 +30,9 @@ def get_tokens(source: str, language_extension: str, pti):
     language, _ = load_language(language_extension)
     parser = make_parser(language)
     tree = parser.parse(bytes(source, "utf-8"))
+    captures = extract_tokens_from_tree(tree)
 
-    return extract_tokens_from_tree(tree)
+    return captures
 
 
 def walk_tree(cursor: TreeCursor, move: Literal["down", "up", "right"], fn) -> None:
@@ -74,11 +74,13 @@ def extract_tokens_from_tree(tree: Tree) -> List[Tuple[Tuple[int], str]]:
         List[Tuple[Tuple[int], str]]: [description]
     """
     cursor: TreeCursor = tree.walk()
-    children = []
+    children: List[Tuple[Tuple[int], str]] = []
 
-    def walker(cusor: TreeCursor):
+    def walker(cursor: TreeCursor):
         if is_child_node(cursor.node):
-            indices = (cursor.node.start_byte, cursor.node.end_byte)
+            indices: Tuple[int] = cast(
+                Tuple[int], (cursor.node.start_byte, cursor.node.end_byte)
+            )
             children.append((indices, cursor.node.type))
 
     walk_tree(cursor, "down", walker)
