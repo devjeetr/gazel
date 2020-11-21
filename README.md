@@ -1,7 +1,3 @@
-## TODO
-
-[ ] Make sure you sort gazes,edits by timestamp
-[ ]
 # pyTrace
 
 Pytrace provides fixation algorithms for aggregating gazes, as well as tools to help you deal with edits that occur during eyetracking sessions.
