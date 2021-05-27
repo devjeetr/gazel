@@ -2,8 +2,8 @@ from copy import deepcopy
 from typing import List
 
 from gazel.common import GazeConfig, Id
-from gazel.core_types import Snapshot
 from gazel.core_constructors import make_snapshot
+from gazel.core_types import PositionMapping, Snapshot
 from gazel.edits import edit_source
 from gazel.range import token_at_index
 
@@ -27,8 +27,15 @@ def make_versions(source: str, language: str, edits: List[dict]) -> List[Snapsho
     return snapshots
 
 
-def is_point_valid(line: int, col: int) -> bool:
-    return line >= 0 and col >= 0
+def is_point_valid(line: int, col: int, mapping: PositionMapping) -> bool:
+    if not (line >= 0 and col >= 0): return False
+
+    try:
+        point = mapping[line, col]
+
+        return True
+    except:
+        return False
 
 
 def assign_tokens_to_gazes(
@@ -64,10 +71,12 @@ def assign_tokens_to_gazes(
             if gaze[gaze_config.time_key] > snapshots[current_version + 1].time:
                 current_version += 1
         line, col = gaze[gaze_config.line_key], gaze[gaze_config.col_key]
-        if not is_point_valid(line, col):
-            continue
+        
         snapshot = snapshots[current_version]
+        if not is_point_valid(line, col, snapshot.source.mapping):
+            continue
         gaze_index = snapshot.source.mapping[line, col]
+
         token = token_at_index(snapshot, gaze_index)  # TODO
 
         if token:

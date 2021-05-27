@@ -1,4 +1,3 @@
-from gazel.core_types import GazeChange, SnapshotDiff, TokenChange, Snapshot
 import functools
 from typing import Dict, List, Set, Union, cast
 
@@ -6,6 +5,7 @@ import pampy
 import pandas as pd
 
 from gazel.core import assign_tokens_to_gazes, make_versions
+from gazel.core_types import GazeChange, Snapshot, SnapshotDiff, TokenChange
 
 
 def get_edit_time(edit: Dict) -> float:

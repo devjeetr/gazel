@@ -1,22 +1,105 @@
-from typing import Tuple, List, Literal, cast
-from tree_sitter import Language, Parser, Tree, TreeCursor, Node
+
+from __future__ import annotations
+
+import os
+from dataclasses import dataclass
+from pathlib import Path
+from typing import List, Literal, Optional, Tuple, cast
+
+from git import Repo
+from tqdm.auto import tqdm
+from tree_sitter import Language, Node, Parser, Tree, TreeCursor
+
+SUPPORTED_LANGUAGES = {
+    "java": "java",
+    "js": "javascript",
+    "jsx": "javascript",
+    "ts": "typescript",
+    "tsx": "typescript",
+    "cpp": "cpp",
+    "cs": "c-sharp",
+    "go": "go",
+    "yml": "yaml",
+    "yaml": "yaml",
+    "elm": "elm",
+    "c": "c",
+    "py": "python",
+    "lua": "lua",
+    "rb": "ruby",
+    "r": "r",
+    "R": "r",
+    "rs": "rust",
+    "php": "php",
+    "ocaml": "ocaml",
+    "toml": "toml",
+    "jl": "julia",
+}
 
 
-def load_language(extension: str):
-    if extension == "js":
-        language = Language("./gazel/languages/languages.so", "javascript")
-        with open("gazel/languages/javascript/queries/highlights.scm") as f:
-            query_spec = f.read()
+def clone_repo(repo_url: str, repo_path: str):
+    def make_progress():
+        bar = tqdm()
+        total = None
 
-        return language, query_spec
+        def progress_reporter(op_code, curr_count, max_count, message):
+            nonlocal total
+            if total is None:
+                total = max_count
+                bar.reset(total=total)
 
-    if extension == "cpp":
-        language = Language("./gazel/languages/languages.so", "cpp")
-        with open("./gazel/languages/cpp/queries/highlights.scm") as f:
-            query_spec = f.read()
+            bar.update(curr_count)
 
-        return language, query_spec
-    raise Exception("No language for extension " + extension)
+            if curr_count == max_count:
+                bar.close()
+
+        return progress_reporter
+
+    repo = Repo.clone_from(repo_url, repo_path, progress=make_progress())
+    del repo
+
+
+def get_repo_path(cache_dir: str, language: str):
+    return os.path.join(cache_dir, f"tree-sitter-{language}")
+
+
+def build_language_library(cache_dir: str, library_path: str):
+    language_repo_paths = []
+    for language in SUPPORTED_LANGUAGES:
+        repo_name = f"tree-sitter-{language}"
+        repo_path = get_repo_path(cache_dir, language)
+        if not os.path.exists(cache_dir):
+            os.makedirs(cache_dir)
+
+        if not os.path.exists(repo_path):
+            clone_repo(f"https://github.com/tree-sitter/{repo_name}", repo_path)
+        language_repo_paths.append(repo_path)
+
+    Language.build_library(
+        library_path, language_repo_paths,
+    )
+
+
+def load_language(
+    extension: str,
+    cache_dir: Optional[str] = None,
+    language_library: Optional[str] = None,
+) -> Parser:
+    if not cache_dir:
+        cache_dir = Path().home() / ".cache" / "tree-sitter-grammars"
+    if not language_library:
+        language_library = "language_lib.so"
+    assert (
+        extension in SUPPORTED_LANGUAGES
+    ), f"Invalid language, can be one of [{', '.join(SUPPORTED_LANGUAGES)}]"
+    language_library = os.path.join(cache_dir, language_library)
+
+    if not os.path.exists(language_library):
+        build_language_library(cache_dir=cache_dir, library_path=language_library)
+
+    language = SUPPORTED_LANGUAGES[extension]
+    grammar = Language(language_library, language)
+
+    return grammar
 
 
 def make_parser(language):
@@ -27,7 +110,7 @@ def make_parser(language):
 
 
 def get_tokens(source: str, language_extension: str, pti):
-    language, _ = load_language(language_extension)
+    language = load_language(language_extension)
     parser = make_parser(language)
     tree = parser.parse(bytes(source, "utf-8"))
     captures = extract_tokens_from_tree(tree)
