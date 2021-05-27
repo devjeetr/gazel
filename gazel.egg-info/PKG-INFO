@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: gazel
-Version: 0.0.1
+Version: 0.0.3
 Summary: Track fixations across edits for eyetracking experiments
 Home-page: https://github.com/devjeetrr/pytrace
 Author: Devjeet Roy

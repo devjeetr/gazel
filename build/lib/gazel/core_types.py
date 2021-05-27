@@ -1,5 +1,7 @@
 from dataclasses import dataclass
-from typing import Dict, List, Literal, Mapping, Optional, Tuple, NamedTuple
+from difflib import Differ
+from pprint import pformat
+from typing import Dict, List, Literal, Mapping, NamedTuple, Optional, Tuple
 
 
 @dataclass(frozen=True, eq=True, order=True)
@@ -37,6 +39,9 @@ class Token:
     source: str
     id: int
     syntax_node: str
+
+    def __repr__(self):
+        return self.source[self.range.start.index : self.range.end.index]
 
 
 class PositionMapping:
@@ -77,6 +82,21 @@ class TokenChange:
     old: Optional[Token]
     new: Optional[Token]
 
+    def __repr__(self):
+        old_text = ""
+        if self.old:
+            old_text = self.old.source[
+                self.old.range.start.index : self.old.range.end.index
+            ]
+        new_text = ""
+        if self.new:
+            new_text = self.new.source[
+                self.new.range.start.index : self.new.range.end.index
+            ]
+
+        d = Differ()
+        return pformat(list(d.compare([old_text], [new_text])))
+
 
 class GazeChange(NamedTuple):
     type: Literal["deleted", "moved"]
@@ -106,3 +126,4 @@ class SnapshotDiff(NamedTuple):
     new: Snapshot
     token_changes: List[TokenChange]
     gaze_changes: List[GazeChange]
+

@@ -1,4 +1,3 @@
-from gazel.core_types import GazeChange, SnapshotDiff, TokenChange, Snapshot
 import functools
 from typing import Dict, List, Set, Union, cast
 
@@ -6,6 +5,7 @@ import pampy
 import pandas as pd
 
 from gazel.core import assign_tokens_to_gazes, make_versions
+from gazel.core_types import GazeChange, Snapshot, SnapshotDiff, TokenChange
 
 
 def get_edit_time(edit: Dict) -> float:
@@ -52,11 +52,12 @@ class Tracker:
         source_language: str,
         edit_aggregation_window: float = 3.0,
     ):
-        # self.changelog = _aggregate_edits(changelog, edit_aggregation_window)
+        changelog = _aggregate_edits(changelog, edit_aggregation_window)
         self.changelog = changelog
+        # self.changelog = changelog
 
         self.edit_aggregation_window = edit_aggregation_window
-        self.snapshots = make_versions(source, source_language, changelog)
+        self.snapshots = make_versions(source, source_language, self.changelog)
         gazes = assign_tokens_to_gazes(gazes.to_dict("records"), self.snapshots)
         self.gazes: pd.dataFrame = pd.DataFrame(gazes)
 
@@ -121,7 +122,9 @@ class Tracker:
             gaze_changes=gaze_changes,
         )
 
-    def gazes_for_edit_window(self, index: int, snapshot_only=False) -> pd.DataFrame:
+    def fixations_for_edit_window(
+        self, index: int, snapshot_only=False
+    ) -> pd.DataFrame:
         """returns all the gazes for the snapshot at index `index`.
         By default, it will provide all gazes from the start of the experiment,
         until the snapshot `i`. If you want gazes only for the duration of time
@@ -200,18 +203,19 @@ class Tracker:
 
         return self.snapshots[-1]
 
-    def get_gazes_for_snapshot(self, i: int) -> pd.DataFrame:
+    def get_fixations(self):
+        return self.gazes
+
+    def get_fixations_for_snapshot(self, i: int) -> pd.DataFrame:
         assert i >= 0, "index must be >= 0"
         assert i < len(self.snapshots), "invalid snapshot id"
 
         start_time = self.snapshots[i].time
         end_time = (
-            self.snapshots[i + 1] if i + 1 < len(self.snapshots) else float("inf")
+            self.snapshots[i + 1].time if i + 1 < len(self.snapshots) else float("inf")
         )
-
-        return self.gazes.query(
-            f"system_time >= {start_time} && system_time < {end_time}"
-        )
+        gazes = self.gazes
+        return gazes[(gazes.system_time >= start_time) & (gazes.system_time < end_time)]
 
     def get_token_history(
         self, id_or_ids: Union[Set[int], int], start_snapshot=0
@@ -219,7 +223,7 @@ class Tracker:
         if isinstance(id_or_ids, int):
             id_or_ids = {id_or_ids}
 
-        diff = self.diff(start_snapshot, len(self.snapshots) + 1)
+        diff = self.diff(start_snapshot, len(self.snapshots))
         token_changes = diff.token_changes
         return list(
             filter(
@@ -228,6 +232,14 @@ class Tracker:
                 token_changes,
             )
         )
+
+    def get_first_token_by_text(self, text):
+        for snapshot in self.snapshots:
+            for token in snapshot.tokens:
+                start, end = token.range.start.index, token.range.end.index
+                token_text = token.source[start:end]
+                if token_text == text:
+                    return token
 
 
 def _get_token_id_for_change(change: TokenChange) -> int:

@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="gazel",  # Replace with your own username
-    version="0.0.1",
+    version="0.0.3",
     author="Devjeet Roy",
     author_email="devjeetrr@gmail.com",
     description="Track fixations across edits for eyetracking experiments",
@@ -13,6 +13,13 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/devjeetrr/pytrace",
     packages=setuptools.find_packages(),
+    install_requires=[
+        'pampy',
+        'GitPython',
+        'tqdm',
+        'pandas',
+        "tree_sitter",
+    ],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
